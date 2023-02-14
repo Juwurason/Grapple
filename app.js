@@ -85,7 +85,7 @@ app.post("/login", async (req, res) =>{
     const { Email, Password } = req.body;
     const loginData = await login(Email, Password);
     if (loginData.error) {
-      res.status(401).json(loginData);
+      res.status(401).json(loginData.error);
     } else {
       res.json(loginData);
     }
