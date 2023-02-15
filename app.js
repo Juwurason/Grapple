@@ -95,9 +95,12 @@ app.post("/logout", async (req, res) => {
     try {
         const { DoctorId } = req.body;
         const logoutUser = await logout(DoctorId)
-        res.json({ message: "User logged out successfully" });
-    } catch (err) {
-        console.error(err);
+        if (logoutUser.error) {
+          return res.status(500).json({ message: logoutUser.error });
+        }
+        res.json({ message: logoutUser.message });
+    } catch (error) {
+        console.log(error);
         res.status(500).json({ error: "An error occurred while logging out" });
     }
 });

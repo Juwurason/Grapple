@@ -80,7 +80,7 @@ export async function login(Email, Password) {
   const match = await bcrypt.compare(Password, rows[0].Password);
   if (match) {
   const doctorId = rows[0].DoctorId;
-  await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [doctorId]);
+   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [doctorId]);
   const { FirstName, Email, DoctorId } = rows[0];
   // create and return JWT
   return { token: jwt.sign({ FirstName, Email, DoctorId }, secret) };
@@ -96,10 +96,10 @@ export async function login(Email, Password) {
 export async function logout(DoctorId) {
   try {
     // update IsActive to 0 for the doctor
-    await pool.query(`UPDATE doctor SET IsActive = 0 WHERE DoctorId = ?`, [DoctorId]);
-    return { message: 'User logged out successfully' };
-  } catch (err) {
-    console.error(err);
+    const [rows] =  await pool.query(`UPDATE doctor SET IsActive = 0 WHERE DoctorId = ?`, [DoctorId]);
+    return { message: 'User logged out successfully', rows };
+  } catch (error) {
+    console.log(error);
     return { error: 'An error occurred while logging out' };
   }
 }
