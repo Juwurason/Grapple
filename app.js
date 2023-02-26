@@ -83,19 +83,19 @@ app.post("/doctorSignup", async (req, res) =>{
     }
 })
 
-app.get('/verify-otp', (req, res) => {
-  const email = req.query.email;
+// app.get('/verify-otp', (req, res) => {
+//   const email = req.query.email;
 
-  // Display a form to enter the OTP, with the email field pre-filled
-  res.render('verify-otp', { email: email });
-});
+//   // Display a form to enter the OTP, with the email field pre-filled
+//   res.render('verify-otp', { email: email });
+// });
 
 app.post('/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
+  const { Email, otp } = req.body;
 
   try {
     // TODO: Retrieve the OTP from the database or cache
-    const savedOTP = await getOTP(email);
+    const savedOTP = await getOTP(Email);
 
      // Compare the received OTP with the saved one
     if (otp === savedOTP) {

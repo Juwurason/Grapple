@@ -123,7 +123,7 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
 
 export async function getOTP(Email) {
   try {
-    const [rows] = await pool.query('SELECT Token FROM users WHERE email = ?', Email);
+    const [rows] = await pool.query('SELECT Token FROM users WHERE Email = ?', Email);
     if (rows.length === 0) {
       throw new Error('No OTP found for the given email');
     }
@@ -138,10 +138,10 @@ export async function getOTP(Email) {
 export async function deleteOTP(Email) {
   try {
     // Update the database to confirm the email
-    const [updateConfirmationResult] = await pool.query('UPDATE users SET EmailConfirmed = 1 WHERE email = ?', Email);
+    const [updateConfirmationResult] = await pool.query('UPDATE users SET EmailConfirmed = 1 WHERE Email = ?', Email);
 
     // Update the database to delete the OTP token
-    const [updateTokenResult] = await pool.query('UPDATE users SET Token = NULL WHERE email = ?', Email);
+    const [updateTokenResult] = await pool.query('UPDATE users SET Token = NULL WHERE Email = ?', Email);
 
     // Return success message
     return { message: `OTP for ${Email} has been deleted` };
