@@ -99,7 +99,7 @@ app.post('/verify-otp', async (req, res) => {
 
      // Compare the received OTP with the saved one
     if (otp === savedOTP) {
-      await deleteOTP(email);
+      await deleteOTP(Email);
 
       res.json({ message: 'OTP verified successfully' });
     } else {
