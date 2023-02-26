@@ -154,17 +154,17 @@ export async function deleteOTP(Email) {
 
 export async function login(Email, Password) {
   try {
-  const [rows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
+  const [rows] = await pool.query(`SELECT * FROM users WHERE Email = ?`, [Email]);
   if (!rows[0]) {
   return { error: 'Email is not registered' };
   }
   const match = await bcrypt.compare(Password, rows[0].Password);
   if (match) {
-  const doctorId = rows[0].DoctorId;
-   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [doctorId]);
-  const { FirstName, Email, DoctorId } = rows[0];
+  const usersId = rows[0].id;
+   await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
+  const { FirstName, Email, id } = rows[0];
   // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, DoctorId }, secret) };
+  return { token: jwt.sign({ FirstName, Email, id }, secret) };
   } else {
   return { error: 'Incorrect password' };
   }
