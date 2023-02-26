@@ -162,9 +162,9 @@ export async function login(Email, Password) {
   if (match) {
   const usersId = rows[0].id;
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-  const { FirstName, Email, id } = rows[0];
+  const { FirstName, Email, id, role } = rows[0];
   // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, id }, secret) };
+  return { token: jwt.sign({ FirstName, Email, id, role }, secret) };
   } else {
   return { error: 'Incorrect password' };
   }
