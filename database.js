@@ -158,6 +158,10 @@ export async function login(Email, Password) {
   if (!rows[0]) {
   return { error: 'Email is not registered' };
   }
+
+  if (rows[0].EmailConfirmed === 0) {
+    return { redirect: '/verify-otp' };
+  }
   const match = await bcrypt.compare(Password, rows[0].Password);
   if (match) {
   const usersId = rows[0].id;
