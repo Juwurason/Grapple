@@ -8,23 +8,41 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import validator from "validator"
 import bodyParser from 'body-parser'
+import nodemailer from "nodemailer"
+import multer from "multer"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import admin from "firebase-admin"
+import axios from "axios"
 const PORT = process.env.PORT
 const router = express.Router()
 
+import storage from './config/firebase.js';
+// import config from './config/safe.json?type=json';
+
+
+// const storag = firebase.storage();
+const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(bodyParser.json());
 
+// admin.initializeApp({
+//   credential: admin.credential.cert(config),
+//   storageBucket: process.env.Bucket_url
+// });
+
+// const bucket = admin.storage().bucket();
+
 import {getpost, doctorSignup, getpos, login, logout,
    editDoc, docSched, getDoctorAppointments, patientSignup, getpo, patientLogin, patientHealth, 
-   pharmacySignup, pharmacyAdmin, pharmacyAdminLogin
+   pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP
   } from './database.js'
 
-app.get('/', (req,res)=>{
-   
-    res.send("hello world")
+app.post('/', (req,res)=>{
+   console.log(res.body);
+
 })
 
 app.get('/post', async (req,res)=>{
@@ -39,24 +57,6 @@ app.get('/post/:id', async (req,res)=>{
     res.send(pos)
 })
 
-// app.post("/register", async (req, res) =>{
-//     try {
-//   const {CompanyName, CompanyEmail, CompanyAddress, CompanyPhone, PackagesId} = req.body;
-
-//    if(!validator.isEmail(CompanyEmail)){
-//     return res.status(400).json({ message: 'Invalid email address' });
-// }
-//     const reg = await register(CompanyName, CompanyEmail, CompanyAddress, CompanyPhone, PackagesId)
-//     const i = {id: reg.CompanyId}
-//     // const comid = await getposts(CompanyId)
-//     res.status(301).send({'message': i, 'url': '/companyadmin'})
-//     // res.redirect(`/companyadmin`)
-//     } catch (error) {
-//         console.log(error);
-//         return res.status(500).json({ message: "Error creating user" });
-//     }
-// })
-
 app.post("/doctorSignup", async (req, res) =>{
     // const id = req.body.id;
     try {
@@ -70,16 +70,46 @@ app.post("/doctorSignup", async (req, res) =>{
         
     const newUser = await doctorSignup(FirstName, SurName, Email, PhoneNumber, hashedPassword)
     if (newUser.error) {
+      console.log(newUser.error);
       return res.status(400).json({ error: newUser.error });
     }
     const token = jwt.sign({ Name: newUser.FirstName, Email: newUser.Email, id: newUser.DoctorId }, process.env.JWT_SECRET);
-    res.status(201).json({ message: "User created", token});
+    res.status(201).json({ message: "User created", token, email: Email});
+    // res.redirect(`/verify-otp?email=${Email}`);
     // res.status(201).send(reg)
     } catch (error) {
         console.log(error);
        return res.status(500).json({ message: "Error creating user" });
     }
 })
+
+app.get('/verify-otp', (req, res) => {
+  const email = req.query.email;
+
+  // Display a form to enter the OTP, with the email field pre-filled
+  res.render('verify-otp', { email: email });
+});
+
+app.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    // TODO: Retrieve the OTP from the database or cache
+    const savedOTP = await getOTP(email);
+
+     // Compare the received OTP with the saved one
+    if (otp === savedOTP) {
+      await deleteOTP(email);
+
+      res.json({ message: 'OTP verified successfully' });
+    } else {
+      res.status(400).json({ message: 'Invalid OTP' });
+    }
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
 
 app.post("/login", async (req, res) =>{
     const { Email, Password } = req.body;
@@ -172,6 +202,7 @@ app.post("/patientSignup", async (req, res) =>{
   }
 })
 
+
 app.post("/patientlogin", async (req, res) =>{
   const { Email, Password } = req.body;
   const loginData = await patientLogin(Email, Password);
@@ -250,6 +281,47 @@ app.post("/pharmacyAdLogin", async (req, res) =>{
 });
 
 
+app.post('/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload file to Firebase Storage
+    const fileName = `${Date.now()}_${req.file.originalname}`;
+    const bucketRef = ref(storage, process.env.Bucket_url);
+    const fileRef = ref(bucketRef, fileName);
+    await uploadBytes(fileRef, req.file.buffer, {
+      contentType: req.file.mimetype,
+    });
+
+
+    // Get download URL from Firebase Storage
+    const url = await getDownloadURL(fileRef);
+
+    // Save URL to MySQL
+    // const text = req.body.text;
+     await saveImageUrlToDatabase(url).then(() => {
+      console.log('Image URL saved to database');
+    })
+    .catch((error) => {
+      console.error('Error saving image URL to database:', error);
+    });
+
+    return res.status(200).json({ message: 'File uploaded successfully' });
+  } catch (error) {
+    console.error('Error uploading file to Firebase Storage:', error);
+    return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
+  }
+});
+
+
+
+
+
+
+
+
 app.listen(PORT, ()=> console.log(`app on port ${PORT}`));
 
 
@@ -265,48 +337,30 @@ app.listen(PORT, ()=> console.log(`app on port ${PORT}`));
 
 
 
+// app.post('/send-message', async (req, res) => {
+//   try {
+//     const recipient = req.body.recipient;
+//     const mailFrom = 'Grapple';
+//     const subject = 'Verify';
+//     const randomNumber = Math.floor(100000 + Math.random() * 900000).toString();
+//     const response = await axios.post('http://profitmax-001-site8.ctempurl.com/api/Account/general_email_sending', {
+//       recipient: recipient,
+//       mailFrom: mailFrom,
+//       subject: subject,
+//       message: randomNumber
+//     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//     // Check response status code
+//     if (response.status === 200) {
+//       return res.status(200).json({ message: 'Message sent successfully' });
+//     } else {
+//       return res.status(500).json({ message: 'Failed to send message' });
+//     }
+//   } catch (error) {
+//     console.error('Error sending message:', error);
+//     return res.status(500).json({ message: 'Error sending message' });
+//   }
+// });
 
 
 
