@@ -37,13 +37,26 @@ app.use(bodyParser.json());
 
 import {getpost, doctorSignup, getpos, login, logout,
    editDoc, docSched, getDoctorAppointments, patientSignup, getpo, patientLogin, patientHealth, 
-   pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP
+   pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP, 
+   checkRejectedDocument, uploadNewDocument, authenticateAdmin
   } from './database.js'
 
 app.post('/', (req,res)=>{
    console.log(res.body);
 
 })
+
+
+app.post('/admin/login', async (req, res) => {
+  const { username, password } = req.body;
+  const admin = await authenticateAdmin(username, password);
+  if (admin.error) {
+    res.status(401).json(admin.error);
+  }else {
+    res.json(admin);
+  }
+});
+
 
 app.get('/post', async (req,res)=>{
     const post = await getpost()
@@ -133,6 +146,28 @@ app.post("/logout", async (req, res) => {
         console.log(error);
         res.status(500).json({ error: "An error occurred while logging out" });
     }
+});
+
+app.post('/uploadDoctorDocument', async (req, res) => {
+  const { DoctorId, DocumentUrl, DocumentName } = req.body;
+  
+  try {
+    const canUpload = await checkRejectedDocument(DoctorId);
+
+    if (canUpload.success) {
+      const isUploaded = await uploadNewDocument(DoctorId, DocumentUrl, DocumentName);
+      if (isUploaded) {
+        res.status(200).send({ message: 'Document uploaded successfully' });
+      } else {
+        res.status(500).send({ message: 'An error occurred while uploading the document' });
+      }
+    } else {
+      res.status(400).send({ message: 'You cannot upload another document yet. Please wait for 10 days from the date of the last rejection.' });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: 'An error occurred' });
+  }
 });
 
 app.post("/editdoctor/:id", async (req, res) => {
@@ -314,10 +349,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
   }
 });
-
-
-
-
 
 
 

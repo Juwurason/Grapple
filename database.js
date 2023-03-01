@@ -48,8 +48,28 @@ export async function getpharmacyAd(id){
         const [rows] = await pool.query(`SELECT * FROM pharmaceutical_admin WHERE PharmacyId = ?`, [id])
         return rows[0]
     }
+
+    // Authenticate admin user
+    export async function authenticateAdmin(username, password) {
+      try {
+      const [rows] = await pool.query(`SELECT * FROM admin WHERE username = ?`, [username]);
     
-  export async function sendVerificationEmail(Email, token) {
+      const match = await bcrypt.compare(password, rows[0].password);
+      if (match) {
+      const { username } = rows[0];
+      // create and return JWT
+      return { token: jwt.sign({ username }, secret) };
+      } else {
+      return { error: 'Incorrect password' };
+      }
+    } catch (err) {
+      console.log(err);
+      return { error: 'An error occurred' };
+    }
+    }
+    
+
+export async function sendVerificationEmail(Email, token) {
     try {
       const recipient = Email;
       const mailFrom = 'Grapple';
@@ -162,13 +182,17 @@ export async function login(Email, Password) {
   if (rows[0].EmailConfirmed === 0) {
     return { redirect: '/verify-otp' };
   }
+  const [dows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
   const match = await bcrypt.compare(Password, rows[0].Password);
   if (match) {
   const usersId = rows[0].id;
+  const docId = dows[0].DoctorId
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
+   await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [docId]);
   const { FirstName, Email, id, Role } = rows[0];
+  const {DoctorId} = dows[0]
   // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, id, Role }, secret) };
+  return { token: jwt.sign({ FirstName, Email, id, Role, DoctorId }, secret) };
   } else {
   return { error: 'Incorrect password' };
   }
@@ -188,6 +212,41 @@ export async function logout(DoctorId) {
     return { error: 'An error occurred while logging out' };
   }
 }
+
+  // Check if doctor has a rejected document
+export const checkRejectedDocument = async (DoctorId) => {
+  try {
+    const [result] = await pool.query('SELECT * FROM doctor_document WHERE DoctorId = ? AND Verify = 0', [DoctorId]);
+
+    if (result.length > 0) {
+      const lastRejectedDate = new Date(result[0].RejectDeadline);
+      const currentDate = new Date();
+
+      // Check if 10 days have passed since the last rejection
+      if (currentDate.getTime() - lastRejectedDate.getTime() >= 10 * 24 * 60 * 60 * 1000) {
+        return { success: true, message: 'Document uploaded successfully' };
+      } else {
+        return { success: false, message: 'You cannot upload another document yet. Please wait for 10 days from the date of the last rejection.' };
+      }
+    } else {
+      return true; // Doctor can upload a new document
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error('An error occurred while checking for rejected documents');
+  }
+};
+
+// Upload a new document
+export const uploadNewDocument = async (DoctorId, DocumentUrl, DocumentName) => {
+  try {
+    const [uploadResult] = await pool.query('INSERT INTO doctor_document (DocumentUrl, DocumentName, DoctorId) VALUES (?, ?, ?)', [DocumentUrl, DocumentName, DoctorId]);
+    return { success: true, message: 'Document uploaded successfully' };
+  } catch (error) {
+    console.log(error);
+    throw new Error('An error occurred while uploading the document');
+  }
+};
 
 export async function editDoc(
   id, Gender, FirstName, SurName, MiddleName, AboutMe, Address,
