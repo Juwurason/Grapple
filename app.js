@@ -17,10 +17,7 @@ const PORT = process.env.PORT
 const router = express.Router()
 
 import storage from './config/firebase.js';
-// import config from './config/safe.json?type=json';
 
-
-// const storag = firebase.storage();
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors())
 app.use(express.json())
@@ -28,17 +25,11 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(bodyParser.json());
 
-// admin.initializeApp({
-//   credential: admin.credential.cert(config),
-//   storageBucket: process.env.Bucket_url
-// });
 
-// const bucket = admin.storage().bucket();
-
-import {getpost, doctorSignup, getpos, login, logout,
+import {getpost, doctorSignup,getDoctorById, login, logout,
    editDoc, docSched, getDoctorAppointments, patientSignup, getpo, patientLogin, patientHealth, 
    pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP, 
-   checkRejectedDocument, uploadNewDocument, authenticateAdmin
+   checkRejectedDocument, uploadNewDocument, authenticateAdmin, acceptOrDeclineDoctor, getAllDoctorDocument
   } from './database.js'
 
 app.post('/', (req,res)=>{
@@ -63,10 +54,14 @@ app.get('/post', async (req,res)=>{
     res.send(post)
 })
 
+app.get('/getAllDoc', async (req,res)=>{
+    const post = await getAllDoctorDocument()
+    res.send(post)
+})
 
 app.get('/post/:id', async (req,res)=>{
     const id = req.params.id
-    const pos = await getpos(id)
+    const pos = await getDoctorById(id)
     res.send(pos)
 })
 
@@ -96,12 +91,6 @@ app.post("/doctorSignup", async (req, res) =>{
     }
 })
 
-// app.get('/verify-otp', (req, res) => {
-//   const email = req.query.email;
-
-//   // Display a form to enter the OTP, with the email field pre-filled
-//   res.render('verify-otp', { email: email });
-// });
 
 app.post('/verify-otp', async (req, res) => {
   const { Email, otp } = req.body;
@@ -148,27 +137,92 @@ app.post("/logout", async (req, res) => {
     }
 });
 
-app.post('/uploadDoctorDocument', async (req, res) => {
-  const { DoctorId, DocumentUrl, DocumentName } = req.body;
-  
-  try {
-    const canUpload = await checkRejectedDocument(DoctorId);
+app.post('/uploadDoctorDocument', upload.single('image'), async (req, res) => {
+  const { DoctorId, DocumentName } = req.body;
 
-    if (canUpload.success) {
-      const isUploaded = await uploadNewDocument(DoctorId, DocumentUrl, DocumentName);
-      if (isUploaded) {
-        res.status(200).send({ message: 'Document uploaded successfully' });
-      } else {
-        res.status(500).send({ message: 'An error occurred while uploading the document' });
-      }
+  try {
+    // Check if the doctor can upload a new document
+    const canUpload = await checkRejectedDocument(DoctorId);
+    if (!canUpload.success) {
+      return res.status(400).json({ message: 'Please wait for 10 days from the date of the last rejection.' });
+    }
+
+    // Check if a file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload file to Firebase Storage
+    const fileName = `${Date.now()}_${req.file.originalname}`;
+    const bucketRef = ref(storage, process.env.Bucket_url);
+    const fileRef = ref(bucketRef, fileName);
+    await uploadBytes(fileRef, req.file.buffer, {
+      contentType: req.file.mimetype,
+    });
+
+    // Get download URL from Firebase Storage
+    const DocumentUrl = await getDownloadURL(fileRef);
+
+    // Upload document to the database
+    const isUploaded = await uploadNewDocument(DoctorId, DocumentUrl, DocumentName);
+    if (isUploaded) {
+      res.status(200).json({ message: 'Document uploaded successfully' });
     } else {
-      res.status(400).send({ message: 'You cannot upload another document yet. Please wait for 10 days from the date of the last rejection.' });
+      res.status(500).json({ message: 'An error occurred while uploading the document' });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: 'An error occurred' });
+    res.status(500).json({ message: 'An error occurred' });
   }
 });
+
+
+app.post('/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload file to Firebase Storage
+    const fileName = `${Date.now()}_${req.file.originalname}`;
+    const bucketRef = ref(storage, process.env.Bucket_url);
+    const fileRef = ref(bucketRef, fileName);
+    await uploadBytes(fileRef, req.file.buffer, {
+      contentType: req.file.mimetype,
+    });
+
+
+    // Get download URL from Firebase Storage
+    const url = await getDownloadURL(fileRef);
+
+    // Save URL to MySQL
+    // const text = req.body.text;
+     await saveImageUrlToDatabase(url).then(() => {
+      console.log('Image URL saved to database');
+    })
+    .catch((error) => {
+      console.error('Error saving image URL to database:', error);
+    });
+
+    return res.status(200).json({ message: 'File uploaded successfully' });
+  } catch (error) {
+    console.error('Error uploading file to Firebase Storage:', error);
+    return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
+  }
+});
+
+app.post('/acceptOrDeclineDoctor', async (req, res) => {
+  const { DoctorId, IsApproved } = req.body;
+  
+  try {
+    const result = await acceptOrDeclineDoctor(DoctorId, IsApproved);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: 'An error occurred while accepting or declining the doctor' });
+  }
+});
+
 
 app.post("/editdoctor/:id", async (req, res) => {
     try {
@@ -316,39 +370,7 @@ app.post("/pharmacyAdLogin", async (req, res) =>{
 });
 
 
-app.post('/upload', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
 
-    // Upload file to Firebase Storage
-    const fileName = `${Date.now()}_${req.file.originalname}`;
-    const bucketRef = ref(storage, process.env.Bucket_url);
-    const fileRef = ref(bucketRef, fileName);
-    await uploadBytes(fileRef, req.file.buffer, {
-      contentType: req.file.mimetype,
-    });
-
-
-    // Get download URL from Firebase Storage
-    const url = await getDownloadURL(fileRef);
-
-    // Save URL to MySQL
-    // const text = req.body.text;
-     await saveImageUrlToDatabase(url).then(() => {
-      console.log('Image URL saved to database');
-    })
-    .catch((error) => {
-      console.error('Error saving image URL to database:', error);
-    });
-
-    return res.status(200).json({ message: 'File uploaded successfully' });
-  } catch (error) {
-    console.error('Error uploading file to Firebase Storage:', error);
-    return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
-  }
-});
 
 
 

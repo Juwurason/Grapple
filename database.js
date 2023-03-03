@@ -29,13 +29,18 @@ export async function getpost(){
     return rows
 }
 
-export async function getpos(id){
+export async function getDoctorById(id){
         const [rows] = await pool.query(`SELECT * FROM doctor WHERE DoctorId = ?`, [id])
         return rows[0]
     }
 
 export async function getpo(id){
         const [rows] = await pool.query(`SELECT * FROM patient WHERE PatientId = ?`, [id])
+        return rows[0]
+    }
+
+export async function getAllDoctorDocument(){
+        const [rows] = await pool.query(`SELECT * FROM doctor_document`)
         return rows[0]
     }
 
@@ -188,7 +193,7 @@ export async function login(Email, Password) {
   const usersId = rows[0].id;
   const docId = dows[0].DoctorId
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-   await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [docId]);
+   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE id = ?`, [docId]);
   const { FirstName, Email, id, Role } = rows[0];
   const {DoctorId} = dows[0]
   // create and return JWT
@@ -213,7 +218,8 @@ export async function logout(DoctorId) {
   }
 }
 
-  // Check if doctor has a rejected document
+  
+
 export const checkRejectedDocument = async (DoctorId) => {
   try {
     const [result] = await pool.query('SELECT * FROM doctor_document WHERE DoctorId = ? AND Verify = 0', [DoctorId]);
@@ -229,7 +235,13 @@ export const checkRejectedDocument = async (DoctorId) => {
         return { success: false, message: 'You cannot upload another document yet. Please wait for 10 days from the date of the last rejection.' };
       }
     } else {
-      return true; // Doctor can upload a new document
+      const [doctor] = await pool.query('SELECT * FROM doctor WHERE DoctorId = ?', [DoctorId]);
+
+      if (doctor.length > 0) {
+        return { success: true, message: 'Document uploaded successfully' };
+      } else {
+        throw new Error('Doctor does not exist');
+      }
     }
   } catch (error) {
     console.log(error);
@@ -237,14 +249,82 @@ export const checkRejectedDocument = async (DoctorId) => {
   }
 };
 
+
 // Upload a new document
-export const uploadNewDocument = async (DoctorId, DocumentUrl, DocumentName) => {
+export const uploadNewDocument = async (DoctorId, DocumentUrl, DocumentName, DateCreated) => {
   try {
-    const [uploadResult] = await pool.query('INSERT INTO doctor_document (DocumentUrl, DocumentName, DoctorId) VALUES (?, ?, ?)', [DocumentUrl, DocumentName, DoctorId]);
+
+    let DateCreat = new Date()
+    let timeZone = 'Australia/Sydney';
+    let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
+    const [uploadResult] = await pool.query('INSERT INTO doctor_document (DoctorId, DocumentUrl, DocumentName, DateCreated) VALUES (?, ?, ?, ?)', [DoctorId, DocumentUrl, DocumentName, datetime]);
     return { success: true, message: 'Document uploaded successfully' };
   } catch (error) {
     console.log(error);
     throw new Error('An error occurred while uploading the document');
+  }
+};
+
+export async function sendEmail(Email, text) {
+  try {
+    const recipient = Email;
+    const mailFrom = 'Grapple';
+    const subject = 'Account Status';
+    const message = text
+
+    const response = await axios.post('http://profitmax-001-site8.ctempurl.com/api/Account/general_email_sending', {
+      recipient: recipient,
+      mailFrom: mailFrom,
+      subject: subject,
+      message: message
+    });
+
+    if (response.status === 200) {
+      console.log('Message sent successfully');
+    } else {
+      console.error('Failed to send message');
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+}
+
+export const acceptOrDeclineDoctor = async (DoctorId, IsApproved) => {
+  try {
+    // Update the doctor's status in the database
+    const [result] = await pool.query('UPDATE doctor SET IsApproved = ? WHERE DoctorId = ?', [IsApproved, DoctorId]);
+    
+    if (result.affectedRows === 0) {
+      throw new Error('Doctor not found');
+    }
+
+    let DateCreat = new Date();
+    let date = moment(DateCreat).format('YYYY-MM-DD');
+
+    if (IsApproved === 1) {
+      const [res] = await pool.query('UPDATE doctor_document SET Verify = 1 WHERE DoctorId = ?', [DoctorId]);
+      // Send an email to the doctor notifying them that their account has been accepted
+      const doctor = await getDoctorById(DoctorId);
+      const Email = doctor.Email;
+      const text = 'Your account has been accepted by the admin. You can now log in to your account.';
+      // await sendEmail(Email, text);
+      
+      return { success: true, message: 'Doctor accepted successfully' };
+    } else if (IsApproved === 0) {
+      // Send an email to the doctor notifying them that their account has been declined
+      const [res] = await pool.query('UPDATE doctor_document SET RejectDeadline = ? WHERE DoctorId = ?', [date, DoctorId]);
+      const doctor = await getDoctorById(DoctorId);
+      const Email = doctor.Email;
+      const text = 'Your account has been declined by the admin. Please contact support for more information.';
+      // await sendEmail(Email, text);
+      
+      return { success: true, message: 'Doctor declined successfully' };
+    } else {
+      throw new Error('Invalid status');
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error('An error occurred while accepting or declining the doctor');
   }
 };
 
@@ -263,6 +343,8 @@ export async function editDoc(
     return { error: 'An error occurred while updating the doctor details' };
   }
 }
+
+
 
 export async function docSched(DoctorId, ScheDate, ScheTime, DateCreated) {
 
