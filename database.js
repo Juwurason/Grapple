@@ -121,13 +121,11 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         const token = Math.floor(100000 + Math.random() * 900000).toString();
         const [res] = await connection.query(`
         INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1])
+        VALUES (?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1])
         const user = res.insertId
       //  return getpos(user)
  
-        const [res2] = await connection.query(`INSERT INTO users (Email, Password, FirstName, SurName, Token, EmailConfirmed, Role) VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [Email, Password, FirstName, SurName, token, 0, "Doctor"])
+        const [res2] = await connection.query(`INSERT INTO users (Email, Password, FirstName, SurName, Token, EmailConfirmed, Role, IsActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [Email, Password, FirstName, SurName, token, 0, "Doctor", 1])
         const aspnetuserId = res2.insertId
       //  return getpos(user)
       await sendVerificationEmail(Email, token);
@@ -340,6 +338,7 @@ export async function editDoc(
   return { message: 'Doctor details updated successfully' };
   } catch (err) {
     console.error(err);
+
     return { error: 'An error occurred while updating the doctor details' };
   }
 }
