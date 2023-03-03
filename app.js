@@ -115,12 +115,16 @@ app.post('/verify-otp', async (req, res) => {
 
 app.post("/login", async (req, res) =>{
     const { Email, Password } = req.body;
+   try {
     const loginData = await login(Email, Password);
     if (loginData.error) {
       res.status(401).json(loginData.error);
     } else {
       res.json(loginData);
     }
+   } catch (error) {
+    console.log(error);
+   }
 });
 
 app.post("/logout", async (req, res) => {

@@ -193,7 +193,7 @@ export async function login(Email, Password) {
   const usersId = rows[0].id;
   const docId = dows[0].DoctorId
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE id = ?`, [docId]);
+  //  await pool.query(`UPDATE doctor SET IsActive = 1 WHERE id = ?`, [docId]);
   const { FirstName, Email, id, Role } = rows[0];
   const {DoctorId} = dows[0]
   // create and return JWT
@@ -201,8 +201,8 @@ export async function login(Email, Password) {
   } else {
   return { error: 'Incorrect password' };
   }
-} catch (err) {
-  console.log(err);
+} catch (error) {
+  console.log(error);
   return { error: 'An error occurred' };
 }
 }
