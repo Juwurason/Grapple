@@ -167,7 +167,7 @@ export async function deleteOTP(Email) {
     const [updateTokenResult] = await pool.query('UPDATE users SET Token = NULL WHERE Email = ?', Email);
 
     // Return success message
-    return { message: `OTP for ${Email} has been deleted` };
+    return { message: `OTP has been deleted` };
   } catch (error) {
     console.error('Error deleting OTP:', error);
     throw new Error('Error deleting OTP');
@@ -191,7 +191,7 @@ export async function login(Email, Password) {
   const usersId = rows[0].id;
   const docId = dows[0].DoctorId
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-  //  await pool.query(`UPDATE doctor SET IsActive = 1 WHERE id = ?`, [docId]);
+   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [docId]);
   const { FirstName, Email, id, Role } = rows[0];
   const {DoctorId} = dows[0]
   // create and return JWT
