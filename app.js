@@ -181,40 +181,6 @@ app.post('/uploadDoctorDocument', upload.single('image'), async (req, res) => {
 });
 
 
-app.post('/upload', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    // Upload file to Firebase Storage
-    const fileName = `${Date.now()}_${req.file.originalname}`;
-    const bucketRef = ref(storage, process.env.Bucket_url);
-    const fileRef = ref(bucketRef, fileName);
-    await uploadBytes(fileRef, req.file.buffer, {
-      contentType: req.file.mimetype,
-    });
-
-
-    // Get download URL from Firebase Storage
-    const url = await getDownloadURL(fileRef);
-
-    // Save URL to MySQL
-    // const text = req.body.text;
-     await saveImageUrlToDatabase(url).then(() => {
-      console.log('Image URL saved to database');
-    })
-    .catch((error) => {
-      console.error('Error saving image URL to database:', error);
-    });
-
-    return res.status(200).json({ message: 'File uploaded successfully' });
-  } catch (error) {
-    console.error('Error uploading file to Firebase Storage:', error);
-    return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
-  }
-});
-
 app.post('/acceptOrDeclineDoctor', async (req, res) => {
   const { DoctorId, IsApproved } = req.body;
   
@@ -228,13 +194,26 @@ app.post('/acceptOrDeclineDoctor', async (req, res) => {
 });
 
 
-app.post("/editdoctor/:id", async (req, res) => {
+app.post("/editdoctor/:id", upload.single('image'), async (req, res) => {
     try {
       const id = req.params.id;
-      // const id = Number(req.params.id);
-      // const id = parseInt(req.params.id, 10);
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+       // Upload file to Firebase Storage
+       const fileName = `${Date.now()}_${req.file.originalname}`;
+       const bucketRef = ref(storage, process.env.Bucket_url);
+       const fileRef = ref(bucketRef, fileName);
+       await uploadBytes(fileRef, req.file.buffer, {
+         contentType: req.file.mimetype,
+       });
+
+        // Get download URL from Firebase Storage
+      const ImageUrl = await getDownloadURL(fileRef);
+
       const {Gender ,FirstName, SurName,MiddleName, AboutMe, Address,
-        Postcode, PhoneNumber,Qualification, ImageUrl, Country, State, City, DateOfBirth} = req.body;
+        Postcode, PhoneNumber,Qualification, Country, State, City, DateOfBirth} = req.body;
         
       await editDoc(id, Gender, FirstName, SurName,MiddleName, AboutMe, Address,
         Postcode, PhoneNumber,Qualification, ImageUrl, Country, State, City, DateOfBirth);
@@ -242,6 +221,40 @@ app.post("/editdoctor/:id", async (req, res) => {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'An error occurred while updating the doctor details' });
+    }
+  });
+
+  app.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+  
+      // Upload file to Firebase Storage
+      const fileName = `${Date.now()}_${req.file.originalname}`;
+      const bucketRef = ref(storage, process.env.Bucket_url);
+      const fileRef = ref(bucketRef, fileName);
+      await uploadBytes(fileRef, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+  
+  
+      // Get download URL from Firebase Storage
+      const url = await getDownloadURL(fileRef);
+  
+      // Save URL to MySQL
+      // const text = req.body.text;
+       await saveImageUrlToDatabase(url).then(() => {
+        console.log('Image URL saved to database');
+      })
+      .catch((error) => {
+        console.error('Error saving image URL to database:', error);
+      });
+  
+      return res.status(200).json({ message: 'File uploaded successfully' });
+    } catch (error) {
+      console.error('Error uploading file to Firebase Storage:', error);
+      return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
     }
   });
   
