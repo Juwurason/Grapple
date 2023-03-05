@@ -26,7 +26,7 @@ app.use(cookieParser())
 app.use(bodyParser.json());
 
 
-import {getpost, doctorSignup,getDoctorById, login, logout,
+import {getAllDoctor, doctorSignup,getDoctorById, login, logout,
    editDoc, docSched, getDoctorAppointments, patientSignup, getpo, patientLogin, patientHealth, 
    pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP, 
    checkRejectedDocument, uploadNewDocument, authenticateAdmin, acceptOrDeclineDoctor, getAllDoctorDocument
@@ -49,8 +49,8 @@ app.post('/admin/login', async (req, res) => {
 });
 
 
-app.get('/post', async (req,res)=>{
-    const post = await getpost()
+app.get('/getAllDoctor', async (req,res)=>{
+    const post = await getAllDoctor()
     res.send(post)
 })
 

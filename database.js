@@ -24,7 +24,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 }).promise()
 
-export async function getpost(){
+export async function getAllDoctor(){
     const [rows] = await pool.query("SELECT * FROM doctor")
     return rows
 }
