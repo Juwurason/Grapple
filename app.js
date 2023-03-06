@@ -281,6 +281,7 @@ app.get("/appointments/:DoctorId", async (req, res) => {
   }
 });
 
+
 app.post("/patientSignup", async (req, res) =>{
   // const id = req.body.id;
   try {
