@@ -388,38 +388,52 @@ export async function deleteExpiredAppointments() {
 setInterval(deleteExpiredAppointments, 24 * 60 * 60 * 1000);
 
 
-
 export async function patientSignup(FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive, Iscompleted) {
+  // const { FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive } = doctorData
+   const connection = await pool.getConnection();
+   await connection.beginTransaction();
 
-  try {
-      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-      if (!emailRegex.test(Email)) {
+    try {
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        if (!emailRegex.test(Email)) {
           return {error: 'Invalid Email'}
-      }
+        }
+        
+        const [existingUser] = await connection.query(`SELECT * FROM users WHERE Email = ?`, [Email]);
+        if (existingUser[0]) {
+            return { error: 'Email already exists' };
+        }
+
+        let DateCreat = new Date()
+        let timeZone = 'Australia/Sydney';
+        let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
+        // const datetime = DateCreat.toISOString().substr(0, 19).replace('T', ' ');
+        const token = Math.floor(100000 + Math.random() * 900000).toString();
+        const [res] = await connection.query(`
+        INSERT INTO patient (FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive, Iscompleted)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1, 0])
+        const user = res.insertId
+      //  return getpos(user)
+ 
+        const [res2] = await connection.query(`INSERT INTO users (Email, Password, FirstName, SurName, Token, EmailConfirmed, Role, IsActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [Email, Password, FirstName, SurName, token, 0, "Doctor", 1])
+        const aspnetuserId = res2.insertId
+      //  return getpos(user)
+      await sendVerificationEmail(Email, token);
       
-      const [existingUser] = await pool.query(`SELECT * FROM patient WHERE Email = ?`, [Email]);
-      if (existingUser[0]) {
-          return { error: 'Email already exists' };
-      }
+      await connection.commit();
 
-      let DateCreat = new Date()
-      let timeZone = 'Australia/Sydney';
-      let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
-      // const datetime = DateCreat.toISOString().substr(0, 19).replace('T', ' ');
+      return {user, aspnetuserId}
+       
+    } catch (error) {
+      await connection.rollback();
+      console.log(error);
+          return { error: 'An error occurred' };
+    } finally {
+      connection.release();
+    }
 
-      const [res] = await pool.query(`
-      INSERT INTO patient (FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive, Iscompleted)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1, 0])
-      const user = res.insertId
-     return getpo(user)
-     
-  } catch (error) {
-        console.log(error);
-        return { error: 'An error occurred' };
-  }
+ }
 
-}
 
 export async function patientLogin(Email, Password) {
   try {
