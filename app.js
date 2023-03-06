@@ -309,14 +309,17 @@ app.post("/patientSignup", async (req, res) =>{
   }
 })
 
-
 app.post("/patientlogin", async (req, res) =>{
   const { Email, Password } = req.body;
-  const loginData = await patientLogin(Email, Password);
-  if (loginData.error) {
-    return res.status(400).json({ error: loginData.error });
-  } else {
-    res.json(loginData);
+  try {
+    const loginData = await patientLogin(Email, Password);
+    if (loginData.error) {
+      return res.status(400).json({ error: loginData.error });
+    } else {
+      res.json(loginData);
+    }
+  } catch (error) {
+    console.log(error);
   }
 });
 
