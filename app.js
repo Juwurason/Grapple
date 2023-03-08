@@ -32,7 +32,7 @@ import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSc
   acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee
   } from './database.js'
 
-app.post('/', (req,res)=>{
+app.get('/', (req,res)=>{
    res.send("Hello world")
 
 })
