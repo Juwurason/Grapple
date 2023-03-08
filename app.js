@@ -33,7 +33,7 @@ import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSc
   } from './database.js'
 
 app.post('/', (req,res)=>{
-   console.log(res.body);
+   res.send("Hello world")
 
 })
 
