@@ -98,8 +98,9 @@ export async function sendVerificationEmail(Email, token) {
     }
   }
 
-export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive) {
-  // const { FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive } = doctorData
+
+
+export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive) {
    const connection = await pool.getConnection();
    await connection.beginTransaction();
 
@@ -108,24 +109,24 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         if (!emailRegex.test(Email)) {
           return {error: 'Invalid Email'}
         }
-        
+
         const [existingUser] = await connection.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
         if (existingUser[0]) {
             return { error: 'Email already exists' };
         }
-
+      
         let DateCreat = new Date()
-        let timeZone = 'Australia/Sydney';
+        let timeZone = 'Africa/Lagos';
         let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
-        // const datetime = DateCreat.toISOString().substr(0, 19).replace('T', ' ');
+        const expiry = new Date(DateCreat.getTime() + 10 * 60 * 1000);
         const token = Math.floor(100000 + Math.random() * 900000).toString();
         const [res] = await connection.query(`
-        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1])
+        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1])
         const user = res.insertId
       //  return getpos(user)
  
-        const [res2] = await connection.query(`INSERT INTO users (Email, Password, FirstName, SurName, Token, EmailConfirmed, Role, IsActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [Email, Password, FirstName, SurName, token, 0, "Doctor", 1])
+        const [res2] = await connection.query(`INSERT INTO users (Email, Password, FirstName, SurName, Token, EmailConfirmed, Role, IsActive, TokenExpired) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [Email, Password, FirstName, SurName, token, 0, "Doctor", 1, expiry])
         const aspnetuserId = res2.insertId
       //  return getpos(user)
       await sendVerificationEmail(Email, token);
@@ -144,18 +145,60 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
 
  }
 
+ export async function resendOTP(Email) {
+  // Delete any existing OTPs for this email
+  await pool.query('UPDATE users SET Token = NULL WHERE Email = ?', Email);
+
+  const token = Math.floor(100000 + Math.random() * 900000).toString();
+
+  let now = new Date();
+  const newExpired = new Date(now.getTime() + 10 * 60 * 1000);
+
+  await pool.query('UPDATE users SET Token = ?, TokenExpired = ? WHERE Email = ?', [token, newExpired, Email]);
+  // Generate and save a new OTP
+   await sendVerificationEmail(Email, token);
+
+  return { message: 'A new OTP has been sent to your registered email address.' };
+}
+
 export async function getOTP(Email) {
   try {
-    const [rows] = await pool.query('SELECT Token FROM users WHERE Email = ?', Email);
+    const [rows] = await pool.query('SELECT Token, TokenExpired FROM users WHERE Email = ?', Email);
     if (rows.length === 0) {
       throw new Error('No OTP found for the given email');
     }
-    return rows[0].Token;
+    const { Token, TokenExpired } = rows[0];
+      let token = Token
+    let now = new Date();
+    const expiry = new Date(TokenExpired);
+    console.log(now, expiry);
+    if (now > expiry) {
+      await resendOTP(Email)
+      return { error: 'OTP has expired. A new OTP has been sent to your registered email address.' };
+    } else{
+      await sendVerificationEmail(Email, token)
+      return token;
+    }
+    
   } catch (error) {
     console.error('Error while getting OTP:', error);
     throw error;
   }
 }
+
+
+// export async function getOTP(Email) {
+//   try {
+//     const [rows] = await pool.query('SELECT Token FROM users WHERE Email = ?', Email);
+//     if (rows.length === 0) {
+//       throw new Error('No OTP found for the given email');
+//     }
+//     return rows[0].Token;
+//   } catch (error) {
+//     console.error('Error while getting OTP:', error);
+//     throw error;
+//   }
+// }
 
 
 export async function deleteOTP(Email) {
@@ -173,7 +216,6 @@ export async function deleteOTP(Email) {
     throw new Error('Error deleting OTP');
   }
 }
-
 
 export async function login(Email, Password) {
   try {

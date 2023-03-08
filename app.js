@@ -26,10 +26,10 @@ app.use(cookieParser())
 app.use(bodyParser.json());
 
 
-import {getAllDoctor, doctorSignup,getDoctorById, login, logout,
-   editDoc, docSched, getDoctorAppointments, patientSignup, getpo, patientLogin, patientHealth, 
-   pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, saveImageUrlToDatabase, getOTP, deleteOTP, 
-   checkRejectedDocument, uploadNewDocument, authenticateAdmin, acceptOrDeclineDoctor, getAllDoctorDocument
+import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSched, getDoctorAppointments, 
+  patientSignup, getpo, patientLogin, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
+  saveImageUrlToDatabase, getOTP, deleteOTP, checkRejectedDocument, uploadNewDocument, authenticateAdmin, 
+  acceptOrDeclineDoctor,getAllDoctorDocument, sendVerificationEmail
   } from './database.js'
 
 app.post('/', (req,res)=>{
@@ -68,15 +68,19 @@ app.get('/getDoctorById/:id', async (req,res)=>{
 app.post("/doctorSignup", async (req, res) =>{
     // const id = req.body.id;
     try {
-        const {FirstName, SurName, Email, PhoneNumber, Password} = req.body;
+        const {FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword} = req.body;
                
        if(!validator.isEmail(Email)){
             return res.status(400).json({ message: 'Invalid email address' });
         }
 
+        if (Password !== ConfirmPassword) {
+          return res.status(400).json({ message: 'Passwords do not match' });
+        }
+
      const hashedPassword = await bcrypt.hash(Password, 10);
         
-    const newUser = await doctorSignup(FirstName, SurName, Email, PhoneNumber, hashedPassword)
+    const newUser = await doctorSignup(FirstName, SurName, Email, PhoneNumber, hashedPassword, ConfirmPassword)
     if (newUser.error) {
       console.log(newUser.error);
       return res.status(400).json({ error: newUser.error });
@@ -90,7 +94,6 @@ app.post("/doctorSignup", async (req, res) =>{
        return res.status(500).json({ message: "Error creating user" });
     }
 })
-
 
 app.post('/verify-otp', async (req, res) => {
   const { Email, otp } = req.body;
@@ -112,6 +115,20 @@ app.post('/verify-otp', async (req, res) => {
     res.status(500).json({ message: 'Error verifying OTP' });
   }
 });
+
+app.post("/resend-otp", async (req, res) =>{
+    const {Email} = req.body
+    try {
+          const  token = await getOTP(Email)
+      //  await sendVerificationEmail(Email, token)
+       if (token.error) {
+        return res.status(400).json({ error: token.error });
+       }
+       res.json({ message: 'OTP resend successfully', token: token });
+    } catch (error) {
+      res.status(500).json({ message: 'Error resending OTP' });
+    }
+})
 
 app.post("/login", async (req, res) =>{
     const { Email, Password } = req.body;
