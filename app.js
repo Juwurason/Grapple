@@ -27,16 +27,15 @@ app.use(bodyParser.json());
 
 
 import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSched, getDoctorAppointments, 
-  patientSignup, getpo, patientLogin, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
+  patientSignup, patientLogin, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
   saveImageUrlToDatabase, getOTP, deleteOTP, checkRejectedDocument, uploadNewDocument, authenticateAdmin, 
-  acceptOrDeclineDoctor,getAllDoctorDocument, sendVerificationEmail
+  acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee
   } from './database.js'
 
 app.post('/', (req,res)=>{
    console.log(res.body);
 
 })
-
 
 app.post('/admin/login', async (req, res) => {
   const { username, password } = req.body;
@@ -47,7 +46,6 @@ app.post('/admin/login', async (req, res) => {
     res.json(admin);
   }
 });
-
 
 app.get('/getAllDoctor', async (req,res)=>{
     const post = await getAllDoctor()
@@ -120,7 +118,6 @@ app.post("/resend-otp", async (req, res) =>{
     const {Email} = req.body
     try {
           const  token = await getOTP(Email)
-      //  await sendVerificationEmail(Email, token)
        if (token.error) {
         return res.status(400).json({ error: token.error });
        }
@@ -275,11 +272,23 @@ app.post("/editdoctor/:id", upload.single('image'), async (req, res) => {
     }
   });
   
+app.post("/doctor_service_fee", async (req, res) =>{
+
+  const { DoctorId, Service, Description, Rate, ServiceCharge } = req.body
+  try {
+     await docServiceFee(DoctorId, Service, Description, Rate, ServiceCharge)
+     res.json({message: 'Appointment successfully booked'})
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Error " });
+  }
+})
+
 app.post("/book_appointment", async (req, res) =>{
 
-  const { DoctorId, ScheDate, ScheTime } = req.body
+  const { DoctorId, Days, FromTimeOfDay, ToTimeOfDay } = req.body
   try {
-     await docSched(DoctorId, ScheDate, ScheTime)
+     await docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay)
      res.json({message: 'Appointment successfully booked'})
   } catch (error) {
     console.log(error);
