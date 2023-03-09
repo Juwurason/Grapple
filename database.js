@@ -221,10 +221,10 @@ export async function login(Email, Password) {
   const docId = dows[0].DoctorId
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
    await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [docId]);
-  const { FirstName, Email, id, Role } = rows[0];
+  const { FirstName, SurName, Email, id, Role } = rows[0];
   const {DoctorId, Status} = dows[0]
   // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, id, Role, DoctorId, Status }, secret) };
+  return { token: jwt.sign({ FirstName, SurName, Email, id, Role, DoctorId, Status }, secret) };
   } else {
   return { error: 'Incorrect password' };
   }
