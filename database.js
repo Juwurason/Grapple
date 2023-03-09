@@ -122,7 +122,7 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         const token = Math.floor(100000 + Math.random() * 900000).toString();
         const [res] = await connection.query(`
         INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive, Status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1, 0])
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1, 0])
         const user = res.insertId
       //  return getpos(user)
  
@@ -265,6 +265,7 @@ export const checkRejectedDocument = async (DoctorId) => {
       const [doctor] = await pool.query('SELECT * FROM doctor WHERE DoctorId = ?', [DoctorId]);
 
       if (doctor.length > 0) {
+        await pool.query(`UPDATE doctor SET Status = 1 WHERE DoctorId = ?`, [DoctorId]);
         return { success: true, message: 'Document uploaded successfully' };
       } else {
         throw new Error('Doctor does not exist');
