@@ -231,7 +231,7 @@ app.post("/editdoctor/:id", upload.single('image'), async (req, res) => {
         
       await editDoc(id, Gender, FirstName, SurName,MiddleName, AboutMe, Address,
         Postcode, PhoneNumber,Qualification, ImageUrl, Country, State, City, DateOfBirth);
-      res.json({ message: 'details updated successfully' });
+      res.json({ message: 'updated successfully' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'An error occurred while updating the doctor details' });

@@ -100,7 +100,7 @@ export async function sendVerificationEmail(Email, token) {
 
 
 
-export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive) {
+export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive, Status) {
    const connection = await pool.getConnection();
    await connection.beginTransaction();
 
@@ -121,8 +121,8 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         const expiry = new Date(DateCreat.getTime() + 10 * 60 * 1000);
         const token = Math.floor(100000 + Math.random() * 900000).toString();
         const [res] = await connection.query(`
-        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1])
+        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive, Status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1, 0])
         const user = res.insertId
       //  return getpos(user)
  
@@ -222,9 +222,9 @@ export async function login(Email, Password) {
    await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
    await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [docId]);
   const { FirstName, Email, id, Role } = rows[0];
-  const {DoctorId} = dows[0]
+  const {DoctorId, Status} = dows[0]
   // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, id, Role, DoctorId }, secret) };
+  return { token: jwt.sign({ FirstName, Email, id, Role, DoctorId, Status }, secret) };
   } else {
   return { error: 'Incorrect password' };
   }
@@ -285,6 +285,7 @@ export const uploadNewDocument = async (DoctorId, DocumentUrl, DocumentName, Dat
     let timeZone = 'Australia/Sydney';
     let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
     const [uploadResult] = await pool.query('INSERT INTO doctor_document (DoctorId, DocumentUrl, DocumentName, DateCreated) VALUES (?, ?, ?, ?)', [DoctorId, DocumentUrl, DocumentName, datetime]);
+    await pool.query(`UPDATE doctor SET Status = 1 WHERE DoctorId = ?`, [DoctorId]);
     return { success: true, message: 'Document uploaded successfully' };
   } catch (error) {
     console.log(error);
@@ -330,20 +331,22 @@ export const acceptOrDeclineDoctor = async (DoctorId, IsApproved) => {
 
     if (IsApproved === 1) {
       const [res] = await pool.query('UPDATE doctor_document SET Verify = 1 WHERE DoctorId = ?', [DoctorId]);
+      await pool.query(`UPDATE doctor SET Status = 2 WHERE DoctorId = ?`, [DoctorId]);
       // Send an email to the doctor notifying them that their account has been accepted
       const doctor = await getDoctorById(DoctorId);
       const Email = doctor.Email;
       const text = 'Your account has been accepted by the admin. You can now log in to your account.';
-      // await sendEmail(Email, text);
+      await sendEmail(Email, text);
       
       return { success: true, message: 'Doctor accepted successfully' };
     } else if (IsApproved === 0) {
       // Send an email to the doctor notifying them that their account has been declined
       const [res] = await pool.query('UPDATE doctor_document SET RejectDeadline = ? WHERE DoctorId = ?', [date, DoctorId]);
+      await pool.query(`UPDATE doctor SET Status = 3 WHERE DoctorId = ?`, [DoctorId]);
       const doctor = await getDoctorById(DoctorId);
       const Email = doctor.Email;
       const text = 'Your account has been declined by the admin. Please contact support for more information.';
-      // await sendEmail(Email, text);
+      await sendEmail(Email, text);
       
       return { success: true, message: 'Doctor declined successfully' };
     } else {
@@ -367,8 +370,7 @@ export async function editDoc(
   return { message: 'Doctor details updated successfully' };
   } catch (err) {
     console.error(err);
-
-    return { error: 'An error occurred while updating the doctor details' };
+     return { error: 'An error occurred while updating the doctor details' };
   }
 }
 
