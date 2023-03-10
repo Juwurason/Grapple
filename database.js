@@ -215,7 +215,7 @@ export async function login(Email, Password) {
   }
 
   if (rows[0].EmailConfirmed === 0) {
-    return { error: 'Email not verified', email: Email};
+    return res.status(401).json({ message: 'Email not verified', email:Email });
   }
   const [dows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
   const match = await bcrypt.compare(Password, rows[0].Password);
