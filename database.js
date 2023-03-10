@@ -117,7 +117,7 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         if (existingUser[0]) {
             return { error: 'Email already exists' };
         }
-      
+       
         let DateCreat = new Date()
         let timeZone = 'Africa/Lagos';
         let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
@@ -215,7 +215,7 @@ export async function login(Email, Password) {
   }
 
   if (rows[0].EmailConfirmed === 0) {
-    return { redirect: '/verify-otp' };
+    return { error: 'Email not verified' };
   }
   const [dows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
   const match = await bcrypt.compare(Password, rows[0].Password);
