@@ -84,7 +84,7 @@ export async function sendVerificationEmail(Email, token) {
       const recipient = Email;
       const mailFrom = 'Grapple';
       const subject = 'Verify';
-      const message = token
+      const message = `Here Is Your One Time Password(OTP) to Validate your Email Address ${token}`
   
       const response = await axios.post('http://profitmax-001-site8.ctempurl.com/api/Account/general_email_sending', {
         recipient: recipient,
