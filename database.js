@@ -38,7 +38,7 @@ export async function getpo(id){
         const [rows] = await pool.query(`SELECT * FROM patient WHERE PatientId = ?`, [id])
         return rows[0]
     }
-
+    
 export async function getAllDoctorDocument(){
         const [rows] = await pool.query(`SELECT * FROM doctor_document`)
         return rows[0]
@@ -103,9 +103,7 @@ export async function sendVerificationEmail(Email, token) {
     }
   }
 
-
-
-export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive, Status) {
+export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive, Status) {
    const connection = await pool.getConnection();
    await connection.beginTransaction();
 
@@ -126,8 +124,8 @@ export async function doctorSignup(FirstName, SurName, Email, PhoneNumber, Passw
         const expiry = new Date(DateCreat.getTime() + 10 * 60 * 1000);
         const token = Math.floor(100000 + Math.random() * 900000).toString();
         const [res] = await connection.query(`
-        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, DateCreated, IsActive, Status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword, datetime, 1, 0])
+        INSERT INTO doctor (FirstName, SurName, Email, PhoneNumber, Password, DateCreated, IsActive, Status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [FirstName, SurName, Email, PhoneNumber, Password, datetime, 1, 0])
         const user = res.insertId
       //  return getpos(user)
  

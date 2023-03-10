@@ -70,7 +70,6 @@ app.get('/getDoctorById/:id', async (req,res)=>{
 })
 
 app.post("/doctorSignup", async (req, res) =>{
-    // const id = req.body.id;
     try {
         const {FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword} = req.body;
                
@@ -84,7 +83,7 @@ app.post("/doctorSignup", async (req, res) =>{
 
      const hashedPassword = await bcrypt.hash(Password, 10);
         
-    const newUser = await doctorSignup(FirstName, SurName, Email, PhoneNumber, hashedPassword, ConfirmPassword)
+    const newUser = await doctorSignup(FirstName, SurName, Email, PhoneNumber, hashedPassword)
     if (newUser.error) {
       console.log(newUser.error);
       return res.status(400).json({ error: newUser.error });
