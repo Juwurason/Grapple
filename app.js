@@ -57,6 +57,12 @@ app.get('/getAllDoc', async (req,res)=>{
     res.send(post)
 })
 
+app.get('/getAllDocById/:id', async (req,res)=>{
+  const id = req.params.id
+    const post = await getAllDoctorDocument(id)
+    res.send(post)
+})
+
 app.get('/getDoctorById/:id', async (req,res)=>{
     const id = req.params.id
     const pos = await getDoctorById(id)
