@@ -29,7 +29,7 @@ app.use(bodyParser.json());
 import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSched, getDoctorAppointments, 
   patientSignup, patientLogin, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
   saveImageUrlToDatabase, getOTP, deleteOTP, checkRejectedDocument, uploadNewDocument, authenticateAdmin, 
-  acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee
+  acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee, getAllDoctorDocumentById
   } from './database.js'
 
 app.get('/', (req,res)=>{
@@ -59,7 +59,7 @@ app.get('/getAllDoc', async (req,res)=>{
 
 app.get('/getAllDocById/:id', async (req,res)=>{
   const id = req.params.id
-    const post = await getAllDoctorDocument(id)
+    const post = await getAllDoctorDocumentById(id)
     res.send(post)
 })
 
@@ -91,8 +91,6 @@ app.post("/doctorSignup", async (req, res) =>{
     }
     const token = jwt.sign({ Name: newUser.FirstName, Email: newUser.Email, id: newUser.DoctorId }, process.env.JWT_SECRET);
     res.status(201).json({ message: "User created", token, email: Email});
-    // res.redirect(`/verify-otp?email=${Email}`);
-    // res.status(201).send(reg)
     } catch (error) {
         console.log(error);
        return res.status(500).json({ message: "Error creating user" });

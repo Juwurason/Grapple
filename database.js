@@ -44,6 +44,11 @@ export async function getAllDoctorDocument(){
         return rows[0]
     }
 
+export async function getAllDoctorDocumentById(DoctorId) {
+  const [rows] = await pool.query(`SELECT * FROM doctor_document WHERE DoctorId = ?`, [DoctorId])
+  return rows
+}
+
 export async function getpharmacy(id){
         const [rows] = await pool.query(`SELECT * FROM pharmacy WHERE PharmacyId = ?`, [id])
         return rows[0]
