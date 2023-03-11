@@ -295,10 +295,10 @@ app.post("/doctor_service_fee", async (req, res) =>{
 
 app.post("/book_appointment", async (req, res) =>{
 
-  const { DoctorId, Days, FromTimeOfDay, ToTimeOfDay } = req.body
+  const { DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities } = req.body
   try {
-     await docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay)
-     res.json({message: 'Appointment successfully booked'})
+     await docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities)
+     res.json({message: 'Schedule successfully booked', DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities })
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error " });
@@ -320,10 +320,14 @@ app.get("/appointments/:DoctorId", async (req, res) => {
 app.post("/patientSignup", async (req, res) =>{
   // const id = req.body.id;
   try {
-      const {FirstName, SurName, Email, PhoneNumber, Password} = req.body;
+      const {FirstName, SurName, Email, PhoneNumber, Password, ConfirmPassword} = req.body;
              
      if(!validator.isEmail(Email)){
           return res.status(400).json({ message: 'Invalid email address' });
+      }
+
+      if (Password !== ConfirmPassword) {
+        return res.status(400).json({ message: 'Passwords do not match' });
       }
 
    const hashedPassword = await bcrypt.hash(Password, 10);
@@ -335,7 +339,7 @@ app.post("/patientSignup", async (req, res) =>{
   }
   else{
     const token = jwt.sign({ Name: newUser.FirstName, Email: newUser.Email, id: newUser.PatientId }, process.env.JWT_SECRET);
-    res.status(201).json({ message: "User created", token});
+    res.status(201).json({ message: "User created", token: token});
   }
   // res.status(201).send(reg)
   } catch (error) {
