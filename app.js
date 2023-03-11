@@ -279,8 +279,14 @@ app.post("/doctor_service_fee", async (req, res) =>{
 
   const { DoctorId, Service, Description, Rate, ServiceCharge } = req.body
   try {
-     await docServiceFee(DoctorId, Service, Description, Rate, ServiceCharge)
-     res.json({message: 'Appointment successfully booked'})
+   const result = await docServiceFee(DoctorId, Service, Description, Rate, ServiceCharge)
+  //  if (result.error) {
+  //   return res.status(500).json({ message: result.error });
+  //  }else{
+
+    res.json({message: 'Appointment successfully booked', DoctorId, Service, Description, Rate, ServiceCharge})
+  //  }
+
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Error " });

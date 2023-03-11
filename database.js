@@ -217,6 +217,7 @@ export async function login(Email, Password) {
   if (rows[0].EmailConfirmed === 0) {
     return ({ message: 'Email not verified', email:Email });
   }
+  
   const [dows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
   const match = await bcrypt.compare(Password, rows[0].Password);
   if (match) {
@@ -385,7 +386,7 @@ export async function docServiceFee(DoctorId, Service, Description, Rate, Servic
         let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
 
   try {
-    await pool.query(`INSERT INTO doctorschedule (DoctorId, Service, Description, Rate, ServiceCharge, DateCreated) VALUES (?, ?, ?, ?, ?, ?)`,
+    await pool.query(`INSERT INTO doctorservicefee (DoctorId, Service, Description, Rate, ServiceCharge, DateCreated) VALUES (?, ?, ?, ?, ?, ?)`,
      [DoctorId, Service, Description, Rate, ServiceCharge, datetime])
   } catch (error) {
     console.log(error);
@@ -393,15 +394,15 @@ export async function docServiceFee(DoctorId, Service, Description, Rate, Servic
   }
 }
 
-export async function docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay, DateCreated) {
+export async function docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, DateCreated) {
 
   let DateCreat = new Date()
         let timeZone = 'Australia/Sydney';
         let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
 
   try {
-    await pool.query(`INSERT INTO doctorschedule (DoctorId, Days, FromTimeOfDay, ToTimeOfDay, DateCreated) VALUES (?, ?, ?, ?, ?)`,
-     [DoctorId, Days, FromTimeOfDay, ToTimeOfDay, datetime])
+    await pool.query(`INSERT INTO doctorschedule (DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, DateCreated,) VALUES (?, ?, ?, ?, ?, ?)`,
+     [DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, datetime])
   } catch (error) {
     console.log(error);
     return { error: 'An error occurred while inserting the doctor schedule' }
