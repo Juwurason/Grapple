@@ -240,40 +240,6 @@ app.post("/editdoctor/:id", upload.single('image'), async (req, res) => {
       res.status(500).json({ message: 'An error occurred while updating the doctor details' });
     }
   });
-
-  app.post('/upload', upload.single('image'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-      }
-  
-      // Upload file to Firebase Storage
-      const fileName = `${Date.now()}_${req.file.originalname}`;
-      const bucketRef = ref(storage, process.env.Bucket_url);
-      const fileRef = ref(bucketRef, fileName);
-      await uploadBytes(fileRef, req.file.buffer, {
-        contentType: req.file.mimetype,
-      });
-  
-  
-      // Get download URL from Firebase Storage
-      const url = await getDownloadURL(fileRef);
-  
-      // Save URL to MySQL
-      // const text = req.body.text;
-       await saveImageUrlToDatabase(url).then(() => {
-        console.log('Image URL saved to database');
-      })
-      .catch((error) => {
-        console.error('Error saving image URL to database:', error);
-      });
-  
-      return res.status(200).json({ message: 'File uploaded successfully' });
-    } catch (error) {
-      console.error('Error uploading file to Firebase Storage:', error);
-      return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
-    }
-  });
   
 app.post("/doctor_service_fee", async (req, res) =>{
 
@@ -316,7 +282,6 @@ app.get("/appointments/:DoctorId", async (req, res) => {
   }
 });
 
-
 app.post("/patientSignup", async (req, res) =>{
   // const id = req.body.id;
   try {
@@ -347,6 +312,40 @@ app.post("/patientSignup", async (req, res) =>{
      return res.status(500).json({ message: "Error creating user" });
   }
 })
+
+app.post("/editpatient/:id", upload.single('image'), async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+     // Upload file to Firebase Storage
+     const fileName = `${Date.now()}_${req.file.originalname}`;
+     const bucketRef = ref(storage, process.env.Bucket_url);
+     const fileRef = ref(bucketRef, fileName);
+     await uploadBytes(fileRef, req.file.buffer, {
+       contentType: req.file.mimetype,
+     });
+
+      // Get download URL from Firebase Storage
+    const ImageUrl = await getDownloadURL(fileRef);
+
+    const {FirstName, SurName, MiddleName, Address,
+      Postcode, PhoneNumber, Gender, Country,
+      State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
+      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber} = req.body;
+      
+    await editDoc(id,FirstName, SurName, MiddleName, Address,
+      Postcode, PhoneNumber, Gender, ImageUrl, Country,
+      State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
+      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber);
+    res.json({ message: 'updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while updating the doctor details' });
+  }
+});
 
 app.post("/patient_health", async (req, res) =>{
 
@@ -433,6 +432,116 @@ app.listen(PORT, ()=> console.log(`app on port ${PORT}`));
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// app.post('/upload', upload.single('image'), async (req, res) => {
+  //   try {
+  //     if (!req.file) {
+  //       return res.status(400).json({ message: 'No file uploaded' });
+  //     }
+  
+  //     // Upload file to Firebase Storage
+  //     const fileName = `${Date.now()}_${req.file.originalname}`;
+  //     const bucketRef = ref(storage, process.env.Bucket_url);
+  //     const fileRef = ref(bucketRef, fileName);
+  //     await uploadBytes(fileRef, req.file.buffer, {
+  //       contentType: req.file.mimetype,
+  //     });
+  
+  
+  //     // Get download URL from Firebase Storage
+  //     const url = await getDownloadURL(fileRef);
+  
+  //     // Save URL to MySQL
+  //     // const text = req.body.text;
+  //      await saveImageUrlToDatabase(url).then(() => {
+  //       console.log('Image URL saved to database');
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error saving image URL to database:', error);
+  //     });
+  
+  //     return res.status(200).json({ message: 'File uploaded successfully' });
+  //   } catch (error) {
+  //     console.error('Error uploading file to Firebase Storage:', error);
+  //     return res.status(500).json({ message: 'Error uploading file to Firebase Storage' });
+  //   }
+  // });
 
 
 

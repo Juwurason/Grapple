@@ -510,6 +510,27 @@ export async function patientSignup(FirstName, SurName, Email, PhoneNumber, Pass
 
  }
 
+ export async function editPatient(
+  id, FirstName, SurName, MiddleName, Address,
+  Postcode, PhoneNumber, Gender, ImageUrl, Country,
+  State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
+  KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber) {
+  try { await pool.query(`UPDATE patient SET FirstName = ?, SurName = ?, 
+  MiddleName = ?, Address = ?, Postcode = ?, PhoneNumber = ?, Gender = ?,
+   ImageUrl = ?, Country = ?, State = ?, City = ?, DateOfBirth = ?,
+    HomePhone = ?, NextOfKin = ?, Relationship = ?,
+   KinPostcode = ?, KinAddress = ?, KinCountry = ?, KinCity = ?, KinEmail = ?, Suburb = ?, 
+   KinState = ?, KinPhoneNumber = ? WHERE PatientId = ?`, [
+   FirstName, SurName, MiddleName, Address,Postcode, PhoneNumber,
+   Gender, ImageUrl, Country, State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
+   KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber, id])
+  return { message: 'Doctor details updated successfully' };
+  } catch (err) {
+    console.error(err);
+     return { error: 'An error occurred while updating the doctor details' };
+  }
+}
+
 
 export async function patientHealth (PatientId, DateCreated) {
   
