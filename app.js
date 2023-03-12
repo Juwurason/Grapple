@@ -269,7 +269,7 @@ app.post("/book_appointment", async (req, res) =>{
     console.log(error);
     return res.status(500).json({ message: "Error " });
   }
-})
+}) 
 
 app.get("/appointments/:DoctorId", async (req, res) => {
   const DoctorId = req.params.DoctorId;

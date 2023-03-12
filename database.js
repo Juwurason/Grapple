@@ -428,7 +428,7 @@ export async function docSched(DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activ
         let datetime = moment(DateCreat).tz(timeZone).format('YYYY-MM-DD HH:mm:ss');
 
   try {
-    await pool.query(`INSERT INTO doctorschedule (DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, DateCreated,) VALUES (?, ?, ?, ?, ?, ?)`,
+    await pool.query(`INSERT INTO doctorschedule (DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, DateCreated) VALUES (?, ?, ?, ?, ?, ?)`,
      [DoctorId, Days, FromTimeOfDay, ToTimeOfDay, Activities, datetime])
   } catch (error) {
     console.log(error);
