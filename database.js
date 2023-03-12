@@ -207,9 +207,10 @@ export async function deleteOTP(Email) {
   }
 }
 
-export async function login(Email, Password) {
+
+export async function login(email, Password) {
   try {
-  const [rows] = await pool.query(`SELECT * FROM users WHERE Email = ?`, [Email]);
+  const [rows] = await pool.query(`SELECT * FROM users WHERE Email = ?`, [email]);
   if (!rows[0]) {
   return { error: 'Email is not registered' };
   }
@@ -218,25 +219,51 @@ export async function login(Email, Password) {
     return ({ message: 'Email not verified', email:Email });
   }
   
-  const [dows] = await pool.query(`SELECT * FROM doctor WHERE Email = ?`, [Email]);
   const match = await bcrypt.compare(Password, rows[0].Password);
-  if (match) {
-  const usersId = rows[0].id;
-  const docId = dows[0].DoctorId
-   await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-   await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [docId]);
-  const { FirstName, SurName, Email, id, Role } = rows[0];
-  const {DoctorId, Status} = dows[0]
-  // create and return JWT
-  return { token: jwt.sign({ FirstName, SurName, Email, id, Role, DoctorId, Status }, secret) };
-  } else {
-  return { error: 'Incorrect password' };
+  if (!match) {
+    return { error: 'Incorrect password' };
   }
+
+   const userId = rows[0].id;
+    const role = rows[0].Role;
+    await pool.query('UPDATE users SET IsActive = 1 WHERE id = ?', [userId]);
+    const { FirstName, SurName, Email, id } = rows[0];
+    let doctorId, status;
+    if (role === 'Doctor') {
+      const [doctor] = await pool.query('SELECT * FROM doctor WHERE Email = ?', [email]);
+      if (doctor) {
+        doctorId = doctor[0].DoctorId;
+        status = doctor[0].Status;
+      }
+    }
+    let patientId;
+    if (role === 'Patient') {
+      const [patient] = await pool.query('SELECT * FROM patient WHERE Email = ?', [email]);
+      if (patient) {
+        patientId = patient[0].PatientId;
+      }
+    }
+    // create and return JWT
+    return { token: jwt.sign({ FirstName, SurName, Email, id, Role: role, DoctorId: doctorId, Status: status, PatientId: patientId }, secret) };
+ 
+  // if (match) {
+  // const usersId = rows[0].id;
+  // const docId = dows[0].DoctorId
+  //  await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
+  //  await pool.query(`UPDATE doctor SET IsActive = 1 WHERE DoctorId = ?`, [docId]);
+  // const { FirstName, SurName, Email, id, Role } = rows[0];
+  // const {DoctorId, Status} = dows[0]
+  // // create and return JWT
+  // return { token: jwt.sign({ FirstName, SurName, Email, id, Role, DoctorId, Status }, secret) };
+  // } else {
+  // return { error: 'Incorrect password' };
+  // }
 } catch (error) {
   console.log(error);
   return { error: 'An error occurred' };
 }
 }
+
 
 export async function logout(DoctorId) {
   try {
