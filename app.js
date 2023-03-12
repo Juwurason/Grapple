@@ -27,7 +27,7 @@ app.use(bodyParser.json());
 
 
 import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSched, getDoctorAppointments, 
-  patientSignup, patientLogin, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
+  patientSignup, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
   saveImageUrlToDatabase, getOTP, deleteOTP, checkRejectedDocument, uploadNewDocument, authenticateAdmin, 
   acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee, getAllDoctorDocumentById
   } from './database.js'
@@ -347,20 +347,6 @@ app.post("/patientSignup", async (req, res) =>{
      return res.status(500).json({ message: "Error creating user" });
   }
 })
-
-app.post("/patientlogin", async (req, res) =>{
-  const { Email, Password } = req.body;
-  try {
-    const loginData = await patientLogin(Email, Password);
-    if (loginData.error) {
-      return res.status(400).json({ error: loginData.error });
-    } else {
-      res.json(loginData);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-});
 
 app.post("/patient_health", async (req, res) =>{
 

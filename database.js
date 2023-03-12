@@ -510,36 +510,6 @@ export async function patientSignup(FirstName, SurName, Email, PhoneNumber, Pass
 
  }
 
- export async function patientLogin(Email, Password) {
-  try {
-  const [rows] = await pool.query(`SELECT * FROM users WHERE Email = ?`, [Email]);
-  if (!rows[0]) {
-  return { error: 'Email is not registered' };
-  }
-
-  if (rows[0].EmailConfirmed === 0) {
-    return { redirect: '/verify-otp' };
-  }
-  const [dows] = await pool.query(`SELECT * FROM patient WHERE Email = ?`, [Email]);
-  const match = await bcrypt.compare(Password, rows[0].Password);
-  if (match) {
-  const usersId = rows[0].id;
-  const patientId = dows[0].PatientId
-   await pool.query(`UPDATE users SET IsActive = 1 WHERE id = ?`, [usersId]);
-   await pool.query(`UPDATE patient SET IsActive = 1 WHERE PatientId = ?`, [patientId]);
-  const { FirstName, Email, id, Role } = rows[0];
-  const {PatientId} = dows[0]
-  // create and return JWT
-  return { token: jwt.sign({ FirstName, Email, id, Role, PatientId }, secret) };
-  } else {
-  return { error: 'Incorrect password' };
-  }
-} catch (error) {
-  console.log(error);
-  return { error: 'An error occurred' };
-}
-}
-
 
 export async function patientHealth (PatientId, DateCreated) {
   
