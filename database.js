@@ -511,19 +511,20 @@ export async function patientSignup(FirstName, SurName, Email, PhoneNumber, Pass
  }
 
  export async function editPatient(
-  id, FirstName, SurName, MiddleName, Address,
-  Postcode, PhoneNumber, Gender, ImageUrl, Country,
+  id, FirstName, SurName, MiddleName, Address, PhoneNumber, Gender, ImageUrl, Country,
   State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
-  KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber) {
+  KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber,
+  BloodGroup, BloodPressure, Genotype) {
   try { await pool.query(`UPDATE patient SET FirstName = ?, SurName = ?, 
-  MiddleName = ?, Address = ?, Postcode = ?, PhoneNumber = ?, Gender = ?,
+  MiddleName = ?, Address = ?, PhoneNumber = ?, Gender = ?,
    ImageUrl = ?, Country = ?, State = ?, City = ?, DateOfBirth = ?,
     HomePhone = ?, NextOfKin = ?, Relationship = ?,
    KinPostcode = ?, KinAddress = ?, KinCountry = ?, KinCity = ?, KinEmail = ?, Suburb = ?, 
-   KinState = ?, KinPhoneNumber = ? WHERE PatientId = ?`, [
-   FirstName, SurName, MiddleName, Address,Postcode, PhoneNumber,
+   KinState = ?, KinPhoneNumber = ?, BloodGroup = ?, BloodPressure = ?, Genotype = ? WHERE PatientId = ?`, [
+   FirstName, SurName, MiddleName, Address, PhoneNumber,
    Gender, ImageUrl, Country, State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
-   KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber, id])
+   KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber,
+    BloodGroup, BloodPressure, Genotype, id])
   return { message: 'Doctor details updated successfully' };
   } catch (err) {
     console.error(err);

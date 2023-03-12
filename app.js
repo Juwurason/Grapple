@@ -29,7 +29,7 @@ app.use(bodyParser.json());
 import { getAllDoctor, doctorSignup,getDoctorById, login, logout, editDoc, docSched, getDoctorAppointments, 
   patientSignup, patientHealth, pharmacySignup, pharmacyAdmin, pharmacyAdminLogin, 
   saveImageUrlToDatabase, getOTP, deleteOTP, checkRejectedDocument, uploadNewDocument, authenticateAdmin, 
-  acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee, getAllDoctorDocumentById
+  acceptOrDeclineDoctor, getAllDoctorDocument, docServiceFee, getAllDoctorDocumentById, editPatient
   } from './database.js'
 
 app.get('/', (req,res)=>{
@@ -331,15 +331,15 @@ app.post("/editpatient/:id", upload.single('image'), async (req, res) => {
       // Get download URL from Firebase Storage
     const ImageUrl = await getDownloadURL(fileRef);
 
-    const {FirstName, SurName, MiddleName, Address,
-      Postcode, PhoneNumber, Gender, Country,
+    const {FirstName, SurName, MiddleName, Address, PhoneNumber, Gender, Country,
       State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
-      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber} = req.body;
+      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber,
+       BloodGroup, BloodPressure, Genotype} = req.body;
       
-    await editDoc(id,FirstName, SurName, MiddleName, Address,
-      Postcode, PhoneNumber, Gender, ImageUrl, Country,
+    await editPatient(id,FirstName, SurName, MiddleName, Address, PhoneNumber, Gender, ImageUrl, Country,
       State, City, DateOfBirth, HomePhone, NextOfKin, Relationship,
-      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber);
+      KinPostcode, KinAddress, KinCountry, KinCity, KinEmail, Suburb, KinState, KinPhoneNumber,
+      BloodGroup, BloodPressure, Genotype);
     res.json({ message: 'updated successfully' });
   } catch (error) {
     console.error(error);
