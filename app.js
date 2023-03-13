@@ -230,10 +230,12 @@ app.post("/editdoctor/:id", upload.single('image'), async (req, res) => {
       const ImageUrl = await getDownloadURL(fileRef);
 
       const {Gender ,FirstName, SurName,MiddleName, AboutMe, Address,
-        Postcode, PhoneNumber,Qualification, Country, State, City, DateOfBirth} = req.body;
+        Postcode, PhoneNumber,Qualification, 
+        Country, State, City, DateOfBirth, Field_of_Specialization} = req.body;
         
       await editDoc(id, Gender, FirstName, SurName,MiddleName, AboutMe, Address,
-        Postcode, PhoneNumber,Qualification, ImageUrl, Country, State, City, DateOfBirth);
+        Postcode, PhoneNumber,Qualification,
+         ImageUrl, Country, State, City, DateOfBirth, Field_of_Specialization);
       res.json({ message: 'updated successfully' });
     } catch (error) {
       console.error(error);

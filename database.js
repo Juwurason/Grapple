@@ -393,12 +393,13 @@ export const acceptOrDeclineDoctor = async (DoctorId, IsApproved) => {
 export async function editDoc(
   id, Gender, FirstName, SurName, MiddleName, AboutMe, Address,
   Postcode, PhoneNumber, Qualification, ImageUrl, Country,
-  State, City, DateOfBirth) {
+  State, City, DateOfBirth, Field_of_Specialization) {
   try { await pool.query(`UPDATE doctor SET Gender = ?, FirstName = ?, SurName = ?, 
   MiddleName = ?, AboutMe = ?, Address = ?, Postcode = ?, PhoneNumber = ?, 
-  Qualification = ?, ImageUrl = ?, Country = ?, State = ?, City = ?, DateOfBirth = ? WHERE DoctorId = ?`, [
+  Qualification = ?, ImageUrl = ?, Country = ?, State = ?, City = ?,
+   DateOfBirth = ?, Field_of_Specialization = ? WHERE DoctorId = ?`, [
     Gender, FirstName, SurName, MiddleName, AboutMe, Address,Postcode, PhoneNumber,
-     Qualification, ImageUrl, Country, State, City, DateOfBirth, id])
+     Qualification, ImageUrl, Country, State, City, DateOfBirth, Field_of_Specialization, id])
   return { message: 'Doctor details updated successfully' };
   } catch (err) {
     console.error(err);
